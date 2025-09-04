@@ -1,6 +1,7 @@
 # role rental status definition
-class BookingAction:
-    APPROVE = "approve"
-    CANCEL = "cancel"
-    REJECT = "reject"
+class bookingAction:
+    APPROVE = "approved"
+    COMPLETED = "completed"
+    REJECT = "rejected"
+    PENDING = "pending"
     

@@ -2,7 +2,7 @@ import sqlite3
 
 # Establish a connection to the SQLite database
 def create_connection():
-    return sqlite3.connect('car_rental.db', check_same_thread=False)
+    return sqlite3.connect('car_rental.db', check_same_thread=False, timeout=30)
 
 # Create tables if they do not exist
 def create_tables():
@@ -30,7 +30,7 @@ def create_tables():
             model TEXT NOT NULL,
             year TEXT NOT NULL,
             mileage INTEGER NOT NULL,
-            is_Available INTEGER CHECK(is_Available IN (0, 1)) NOT NULL,
+            is_available INTEGER CHECK(is_available IN (0, 1)) NOT NULL,
             min_rental_period INTEGER NOT NULL,
             max_rental_period INTEGER NOT NULL,
             car_rate REAL NOT NULL,

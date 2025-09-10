@@ -2,10 +2,12 @@ from .database import create_connection
 from Enum.bookingAction import bookingAction as booking_action
 import re
 import sqlite3
-from datetime import datetime
 import logging
 from typing import Optional, List, Dict, Any
 from sqlite3 import IntegrityError
+from contextlib import closing
+from datetime import datetime, timedelta
+from typing import List
 from contextlib import closing
 
 # Configure logging
@@ -24,15 +26,25 @@ class BookingManagement:
         from .database import create_tables
         create_tables()
 
+    #calculate price
+    def calculate_price(self, car_rate: float, start_date: str, end_date: str) -> float:
+        date_format = "%Y-%m-%d"
+        start = datetime.strptime(start_date, date_format)
+        end = datetime.strptime(end_date, date_format)
+        delta = end - start
+        days = delta.days + 1
+        return car_rate * days
+    
     # Create a new booking
-    def create_booking(self, car_id: int, user_id: int, start_date: str, end_date: str) -> Optional[int]:
+    def create_booking(self, car_id: int, user_id: int, start_date: str, end_date: str, car_rate) -> Optional[int]:
         rental_status = booking_action.PENDING
+        price = self.calculate_price(car_rate, start_date, end_date)
         try:
             with closing(self.conn.cursor()) as cursor:
                 cursor.execute('''
-                    INSERT INTO bookings (car_id, user_id, start_date, end_date, rental_status)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (car_id, user_id, start_date, end_date, rental_status))
+                    INSERT INTO bookings (car_id, user_id, start_date, end_date, rental_status, price)
+                    VALUES (?, ?, ?, ?, ?,?)
+                ''', (car_id, user_id, start_date, end_date, rental_status,price))
                 self.conn.commit()
                 return cursor.lastrowid
         except IntegrityError as e:
@@ -80,7 +92,7 @@ class BookingManagement:
     def get_all_bookings(self) -> List[Dict[str, Any]]:
         try:
             with closing(self.conn.cursor()) as cursor:
-                cursor.execute('SELECT * FROM bookings')
+                cursor.execute('SELECT bookings.booking_id,bookings.car_id,bookings.user_id, cars.model,users.name,bookings.start_date,bookings.end_date, bookings.price,bookings.rental_status FROM bookings inner join users on bookings.user_id=users.user_id inner join cars on bookings.car_id=cars.car_id')
                 rows = cursor.fetchall()
                 columns = [column[0] for column in cursor.description]
                 return [dict(zip(columns, row)) for row in rows]
@@ -167,7 +179,31 @@ class BookingManagement:
         except Exception as e:
             logger.error(f"Error retrieving bookings in date range: {e}")
             return []
-        
+    
+
+    def get_booked_dates(self, car_id: int) -> List[datetime.date]:
+        try:
+            with closing(self.conn.cursor()) as cursor:
+                cursor.execute('''
+                    SELECT start_date, end_date FROM bookings
+                    WHERE car_id = ? AND rental_status IN (?, ?)
+                ''', (car_id, booking_action.PENDING, booking_action.APPROVE))
+                rows = cursor.fetchall()
+
+            booked = []
+            for start, end in rows:
+                start_dt = datetime.strptime(start, "%Y-%m-%d").date()
+                end_dt = datetime.strptime(end, "%Y-%m-%d").date()
+                booked.extend([
+                    start_dt + timedelta(days=i)
+                    for i in range((end_dt - start_dt).days + 1)
+                ])
+            return booked
+
+        except Exception as e:
+            logger.error(f"Error fetching booked dates for car {car_id}: {e}")
+            return []
+
     # Close the database connection
     def close_connection(self):
         if self.conn:

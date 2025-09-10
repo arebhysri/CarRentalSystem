@@ -24,20 +24,20 @@ class CarManagement:
 
     #add a new car to the database
     def add_car(self, manufacturer: str, model: str, year: str, mileage: int,
-                is_Available: bool, min_rental_period: int, max_rental_period: int,
+                is_available: bool, min_rental_period: int, max_rental_period: int,
                 car_rate: float) -> Optional[int]:
         created_at = datetime.now().isoformat()
         last_update = created_at
-        is_Available_int = 1 if is_Available else 0
+        is_available_int = 1 if is_available else 0
 
         try:
             with closing(self.conn.cursor()) as cursor:
                 cursor.execute('''
-                    INSERT INTO cars (manufacturer, model, year, mileage, is_Available,
+                    INSERT INTO cars (manufacturer, model, year, mileage, is_available,
                                       min_rental_period, max_rental_period, car_rate,
                                       created_at, last_update)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (manufacturer, model, year, mileage, is_Available_int,
+                ''', (manufacturer, model, year, mileage, is_available_int,
                       min_rental_period, max_rental_period, car_rate,
                       created_at, last_update))
                 self.conn.commit()
@@ -52,7 +52,7 @@ class CarManagement:
     #update car details
     def update_car(self, car_id: int, manufacturer: Optional[str] = None,
                    model: Optional[str] = None, year: Optional[str] = None,
-                   mileage: Optional[int] = None, is_Available: Optional[bool] = None,
+                   mileage: Optional[int] = None, is_available: Optional[bool] = None,
                    min_rental_period: Optional[int] = None,
                    max_rental_period: Optional[int] = None,
                    car_rate: Optional[float] = None) -> bool:
@@ -72,9 +72,9 @@ class CarManagement:
         if mileage is not None:
             updates.append("mileage = ?")
             params.append(mileage)
-        if is_Available is not None:
-            updates.append("is_Available = ?")
-            params.append(1 if is_Available else 0)
+        if is_available is not None:
+            updates.append("is_available = ?")
+            params.append(1 if is_available else 0)
         if min_rental_period is not None:
             updates.append("min_rental_period = ?")
             params.append(min_rental_period)
@@ -142,7 +142,7 @@ class CarManagement:
         try:
             with closing(self.conn.cursor()) as cursor:
                 if available_only:
-                    cursor.execute("SELECT * FROM cars WHERE is_Available = 1")
+                    cursor.execute("SELECT * FROM cars WHERE is_available = 1")
                 else:
                     cursor.execute("SELECT * FROM cars")
                 rows = cursor.fetchall()
@@ -153,15 +153,15 @@ class CarManagement:
             return []
     
     # set car availability
-    def set_car_availability(self, car_id: int, is_Available: bool) -> bool:
-        is_Available_int = 1 if is_Available else 0
+    def set_car_availability(self, car_id: int, is_available: bool) -> bool:
+        is_available_int = 1 if is_available else 0
         try:
             with closing(self.conn.cursor()) as cursor:
                 cursor.execute('''
                     UPDATE cars
-                    SET is_Available = ?, last_update = ?
+                    SET is_available = ?, last_update = ?
                     WHERE car_id = ?
-                ''', (is_Available_int, datetime.now().isoformat(), car_id))
+                ''', (is_available_int, datetime.now().isoformat(), car_id))
                 self.conn.commit()
                 if cursor.rowcount == 0:
                     logger.warning(f"No car found with ID {car_id} to update availability.")

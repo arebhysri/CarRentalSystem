@@ -18,6 +18,7 @@ from sqlite3 import IntegrityError
 from Enum.usre_role import user_role
 from Enum.bookingAction import bookingAction as booking_action
 from Enum.actionType import AdminAction
+import pandas as pd
 
 st.markdown("""
     <style>
@@ -153,7 +154,7 @@ def display_admin_dashboard():
         st.subheader("Available Cars")
 
         # Table header
-        header_cols = st.columns([1, 2, 2, 1, 1, 1, 1])
+        header_cols = st.columns([1, 3, 3, 2, 3, 3, 2])
         header_labels = ["ID", "Manufacturer", "Model (Year)", "Mileage", "Available", "Rate", "Actions"]
         for col, label in zip(header_cols, header_labels):
             col.markdown(f"**{label}**")
@@ -164,7 +165,7 @@ def display_admin_dashboard():
                 car_data['is_available'] = car_data.pop('is_Available')
             car = Car(**car_data)
 
-            row = st.columns([1, 2, 2, 1, 1, 1, 1])
+            row = st.columns([1, 3, 3, 2, 3, 3, 2])
             row[0].write(car.car_id)
             row[1].write(car._manufacturer)
             row[2].write(f"{car._model} ({car.year})")
@@ -193,7 +194,7 @@ def display_admin_dashboard():
     bookings = booking_mgmt.get_all_bookings()
     if bookings:
         # Table header
-        header_cols = st.columns([1, 1, 1, 2, 2, 1, 2])
+        header_cols = st.columns([1, 2, 2, 2, 2, 2, 3,2])
         headers = ["#", "Model", "User Name", "Start Date", "End Date", "Price","Rental status", "Actions"]
         for col, label in zip(header_cols, headers):
             col.markdown(f"**{label}**")
@@ -202,7 +203,7 @@ def display_admin_dashboard():
         for booking_data in bookings:
             booking = Booking(**booking_data)
 
-            row = st.columns([1, 1, 1, 1.5, 1.5, 1, 2, 2])
+            row = st.columns([1, 2, 2, 2, 2, 2, 3,2])
             row[0].write(booking.booking_id)
             row[1].write(booking.model)
             row[2].write(booking.name)
@@ -293,28 +294,69 @@ def display_customer_dashboard():
     st.write(f"Welcome, {st.session_state[SESSION_USER_KEY].name}!")
     if st.button("Logout"):
         logout_user()
-    st.subheader("Available Cars")
+    #table display
     cars = car_mgmt.list_cars()
+
     if cars:
+        st.subheader("Available Cars")
+
+        # Prepare data for pandas table
+        car_rows = []
         for car_data in cars:
-            if 'is_available' in car_data:
-                car_data['is_available'] = car_data.pop('is_available')
+            car_data['is_available'] = car_data.get('is_available', False)
             car = Car(**car_data)
-            st.write(f"ID: {car.car_id}, {car._manufacturer} {car._model} ({car.year}), Mileage: {car.get_mileage()}, Available: {'Yes' if car.is_available else 'No'}, Rate: ${car.get_rate()}/day")
+
             if car.is_available:
-                if st.button(f"Book Car {car.car_id}"):
-                    st.session_state['book_car_id'] = car.car_id
-                    st.session_state['show_book_car'] = True
-                    st.rerun()
+                car_rows.append({
+                    "ID": car.car_id,
+                    "Model": f"{car._manufacturer} {car._model}",
+                    "Year": car.year,
+                    "Mileage": car.get_mileage(),
+                    "Rate ($/day)": car.get_rate()
+                })
+
+        # Display pandas table
+        df = pd.DataFrame(car_rows)
+        st.dataframe(df, use_container_width=True)
+
+        # Display booking buttons row by row
+        st.subheader("Book a Car")
+        for car in car_rows:
+            cols = st.columns([1, 3])
+            cols[0].write(f"**Car ID:** {car['ID']}")
+            if cols[1].button(f"Book {car['Model']}", key=f"book_{car['ID']}"):
+                st.session_state['book_car_id'] = car['ID']
+                st.session_state['show_book_car'] = True
+                st.rerun()
     else:
-        st.info("No cars available at the moment.")
+        st.info("No cars available for booking.")
+
     st.subheader("My Bookings")
+    # Fetch all bookings
     bookings = booking_mgmt.get_all_bookings()
+
+    # Filter bookings for the logged-in user
     user_bookings = [b for b in bookings if b['user_id'] == st.session_state[SESSION_USER_KEY].user_id]
+
     if user_bookings:
+        
+        # Prepare data for table
+        booking_rows = []
         for booking_data in user_bookings:
             booking = Booking(**booking_data)
-            st.write(f"Booking ID: {booking.booking_id}, Car ID: {booking.car_id}, Status: {booking._rental_status}, From: {booking.start_date}, To: {booking.end_date}")
+            booking_rows.append({
+                "Booking ID": booking.booking_id,
+                "Car ID": booking.car_id,
+                "Status": booking._rental_status,
+                "Start Date": booking.start_date,
+                "End Date": booking.end_date,
+                "Price": booking.get_price()
+            })
+
+        # Display table
+        df = pd.DataFrame(booking_rows)
+        st.dataframe(df, use_container_width=True)
+
     else:
         st.info("You have no bookings.")
 

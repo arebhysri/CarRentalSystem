@@ -27,7 +27,7 @@ class BookingManagement:
         create_tables()
 
     #calculate price
-    def calculate_price(self, car_rate: float, start_date: str, end_date: str) -> float:
+    def calculateprice(self, car_rate: float, start_date: str, end_date: str) -> float:
         date_format = "%Y-%m-%d"
         start = datetime.strptime(start_date, date_format)
         end = datetime.strptime(end_date, date_format)
@@ -38,12 +38,12 @@ class BookingManagement:
     # Create a new booking
     def create_booking(self, car_id: int, user_id: int, start_date: str, end_date: str, car_rate) -> Optional[int]:
         rental_status = booking_action.PENDING
-        price = self.calculate_price(car_rate, start_date, end_date)
+        price = self.calculateprice(car_rate, start_date, end_date)
         try:
             with closing(self.conn.cursor()) as cursor:
                 cursor.execute('''
                     INSERT INTO bookings (car_id, user_id, start_date, end_date, rental_status, price)
-                    VALUES (?, ?, ?, ?, ?,?)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ''', (car_id, user_id, start_date, end_date, rental_status,price))
                 self.conn.commit()
                 return cursor.lastrowid

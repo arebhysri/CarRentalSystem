@@ -1,15 +1,44 @@
 import sqlite3
+import threading
 
-# Establish a connection to the SQLite database
-def create_connection():
-    return sqlite3.connect('car_rental.db', check_same_thread=False, timeout=30)
+class DatabaseConnection:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        # Prevent reinitialization in singleton
+        if not hasattr(self, '_initialized'):
+            self._connection = None
+            self._initialized = True  
+
+    def get_connection(self):
+        if self._connection is None:
+            self._connection = sqlite3.connect(
+                'car_rental_App.db',
+                check_same_thread=False,
+                timeout=30
+            )
+        return self._connection
+    
+    def close_connection(self):
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+
 
 # Create tables if they do not exist
 def create_tables():
-    conn = create_connection()
+    conn = DatabaseConnection().get_connection()
     cursor = conn.cursor()
     
-    # Create users tables
+    # Create users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +63,9 @@ def create_tables():
             min_rental_period INTEGER NOT NULL,
             max_rental_period INTEGER NOT NULL,
             car_rate REAL NOT NULL,
+            registration_number TEXT UNIQUE NOT NULL,
+            car_type TEXT NOT NULL,
+            fuel_type TEXT NOT NULL,
             created_at TEXT NOT NULL,
             last_update TEXT NOT NULL
         )
@@ -45,6 +77,7 @@ def create_tables():
             booking_id INTEGER PRIMARY KEY,
             car_id INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
+            registration_number TEXT NULL,
             start_date TEXT NOT NULL,
             end_date TEXT NOT NULL,
             rental_status TEXT NOT NULL CHECK(rental_status IN ('pending', 'approved', 'rejected', 'completed')),
@@ -55,4 +88,4 @@ def create_tables():
     ''')
     
     conn.commit()
-    conn.close()
+    # do not close here; let the singleton manage the connection

@@ -25,6 +25,7 @@ class UserManagement:
         self.conn = create_connection()
         self.create_tables()
     
+    
     def create_tables(self):
         # This function ensures that the necessary tables exist
         from .database import create_tables

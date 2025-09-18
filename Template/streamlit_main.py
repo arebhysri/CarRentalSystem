@@ -57,6 +57,27 @@ st.markdown("""
         button[kind="primary"] {
             margin-top: -2px;
         }
+        .marquee {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            box-sizing: border-box;
+            animation: marquee 50s ease-out infinite;
+            font-size: 21px;
+            color: #23037c;
+            padding: 6px 0;
+            font-weight: bold;
+        }
+
+        @keyframes marquee {
+            0%   { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        </style>
+
+        <div class="marquee">
+            🚗 Welcome to Car Rental System — Manage bookings, update statuses, and explore our fleet in real time!
+        </div>
         </style>
     """, unsafe_allow_html=True)
 
@@ -103,8 +124,8 @@ def login_ui():
             st.session_state[SESSION_USER_KEY] = User(**user_data)
             st.session_state[SESSION_ROLE_KEY] = user_data['role']
             st.session_state[SESSION_LOGIN_TIME_KEY] = datetime.now()
-            st.rerun()
             st.success("Login successful!")
+            st.rerun()
         else:
             st.error("Invalid credentials")
 
@@ -323,7 +344,6 @@ def car_listing_ui():
                     st.rerun()
     else:
         st.info("No cars available. Please add new cars.")
-    st.subheader("Booking Management")
     
 
 def booking_ui(car_id: int):

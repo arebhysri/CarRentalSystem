@@ -7,7 +7,7 @@ from Interface.booking_interface import IBookingManagement
 from Utils.booking_utils import calculate_price
 from Database.database import DatabaseConnection, create_tables
 
-from Enum.bookingAction import BookingAction as booking_action
+from Enum.bookingAction import BookingAction
 from typing import Optional, List, Dict, Any
 from datetime import datetime,timedelta
 from contextlib import closing
@@ -38,7 +38,7 @@ class BookingService(IBookingManagement):
                     user_id,
                     start_date,
                     end_date,
-                    booking_action.PENDING,
+                    BookingAction.PENDING.value,
                     price
                 ))
                 self.conn.commit()
@@ -54,7 +54,7 @@ class BookingService(IBookingManagement):
             return 
     
     def update_booking_status(self, booking_id: int, rental_status: str) -> bool:
-        if rental_status not in [action.value for action in booking_action]:
+        if rental_status not in [action.value for action in BookingAction]:
             logger.error("Invalid rental status provided.")
             return False
 
@@ -146,7 +146,7 @@ class BookingService(IBookingManagement):
             return False
 
     def get_bookings_by_status(self, rental_status: str) -> List[Dict[str, Any]]:
-        if rental_status not in booking_action.__members__.values():
+        if rental_status not in BookingAction.__members__.values():
             logger.error("Invalid rental status provided.")
             return []
         try:
@@ -179,7 +179,7 @@ class BookingService(IBookingManagement):
                 cursor.execute('''
                     SELECT start_date, end_date FROM bookings
                     WHERE car_id = ? AND rental_status IN (?, ?)
-                ''', (car_id, booking_action.PENDING, booking_action.APPROVE))
+                ''', (car_id, BookingAction.PENDING.value, BookingAction.APPROVE.value))
                 rows = cursor.fetchall()
 
             booked = []

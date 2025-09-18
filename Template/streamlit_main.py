@@ -34,6 +34,33 @@ booking_mgmt = BookingFactory.get_instance()
 
 st.set_page_config(page_title="Car Rental Dashboard", layout="wide")
 
+st.markdown("""
+        <style>
+        .table-header div {
+            font-weight: 600;
+            font-size: 15px;
+            padding-bottom: 4px;
+        }
+        .table-row div {
+            font-size: 14px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+        div[data-testid="stSelectbox"] {
+            margin-top: -6px;
+            margin-bottom: -6px;
+        }
+        .st-emotion-cache-1ui2hlr {
+            margin-bottom: 0rem;
+            min-height: 0rem;
+        }
+        button[kind="primary"] {
+            margin-top: -2px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
 # Session state for login
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -76,6 +103,8 @@ def login_ui():
             st.session_state[SESSION_USER_KEY] = User(**user_data)
             st.session_state[SESSION_ROLE_KEY] = user_data['role']
             st.session_state[SESSION_LOGIN_TIME_KEY] = datetime.now()
+            st.rerun()
+            st.success("Login successful!")
         else:
             st.error("Invalid credentials")
 
@@ -259,7 +288,7 @@ def car_listing_ui():
     cars = car_mgmt.get_all_cars()
     if cars:
          # Table header
-        header_cols = st.columns([2, 2, 3, 3, 3, 3, 2])
+        header_cols = st.columns([1, 2, 3, 2, 2, 3, 2])
         header_labels = ["ID", "Manufacturer", "Model (Year)","Milage (Fuel Type)", "Available", "Rate", "Actions"]
         for col, label in zip(header_cols, header_labels):
             col.markdown(f"**{label}**")
@@ -270,7 +299,7 @@ def car_listing_ui():
                 car_data['is_available'] = car_data.pop('is_Available')
             car = Car(**car_data)
 
-            row = st.columns([2, 2, 3, 3, 3, 3, 2])
+            row = st.columns([1, 2, 3, 2, 2, 3, 2])
             row[0].write(car.get_registration_number())
             row[1].write(car._manufacturer)
             row[2].write(f"{car._model} ({car.year}) ({car.get_car_type()})")
@@ -407,66 +436,37 @@ def admin_ui():
     if bookings:
 
         #table header
-        header_cols = st.columns([2,3,2,2,3])
-        headers = ["Id", "User Name", "Model","Rental Status",""]
+        header_cols = st.columns([1, 1, 1, 1, 2, 2])
+        headers = ["Id", "User Name", "Model","Rental Status","Update booking Status"]
         for col, label in zip(header_cols,headers):
             col.markdown(f"**{label}**")
             
         #table rows
         for booking in bookings:
-            row=st.columns([2,3,2,2,3])
-            row[0].write(f"{booking['registration_number']}")
-            row[1].write(f"{booking['name']}")
-            row[2].write(f"{booking['model']}")
-            row[3].write(f"{booking['rental_status']}")
-            # st.write(f"Booking ID: {booking['registration_number']}")
-            # st.write(f"User: {booking['name']}")
-            # st.write(f"Car: {booking['model']}")
-            # st.write(f"Status: {booking['rental_status']}")
-            with row[4]:
-                # col_drp_dwn, col_btn = st.columns([1,1])
-                # new_status = col_drp_dwn.selectbox(
-                #     f"Status {booking['booking_id']}",
-                #     [booking_action.PENDING, booking_action.APPROVE, booking_action.REJECT, booking_action.COMPLETED],
-                #     index=[booking_action.PENDING, booking_action.APPROVE, booking_action.REJECT, booking_action.COMPLETED].index(booking['rental_status']),
-                #     key=f"status_select_{booking['booking_id']}"
-                # )
-                # if col_btn.button("Update", key=f"update_btn_{booking['booking_id']}"):
-                #     success = booking_mgmt.update_booking_status(booking['booking_id'], new_status)
-                #     if success:
-                #         st.success(f"Booking {booking['booking_id']} updated to {new_status}.")
-                #         st.rerun()
-                #     else:
-                #         st.error("Failed to update status.")
-                col_drp_dwn, col_btn = st.columns([1,1])
-                status_options = [action.value for action in BookingAction]
-                current_status = booking['rental_status']
-                index = status_options.index(current_status) if current_status in status_options else 0
+            row=st.columns([1, 1, 1, 1, 2,2])
+            row[0].write(f"<div class='table-row'>{booking['registration_number']}</div>", unsafe_allow_html=True)
+            row[1].write(f"<div class='table-row'>{booking['name']}</div>", unsafe_allow_html=True)
+            row[2].write(f"<div class='table-row'>{booking['model']}</div>", unsafe_allow_html=True)
+            row[3].write(f"<div class='table-row'>{booking['rental_status']}</div>", unsafe_allow_html=True)
+            
+            status_options = [action.value for action in BookingAction]
+            current_status = booking['rental_status']
+            index = status_options.index(current_status) if current_status in status_options else 0
 
-                new_status = col_drp_dwn.selectbox(
-                    f"Status of {booking['registration_number']}",
-                    status_options,
-                    index=index,
-                    key=f"status_select_{booking['booking_id']}"
-                )
+            new_status = row[4].selectbox(
+                label="",
+                options=status_options,
+                index=index,
+                key=f"status_select_{booking['booking_id']}"
+            )
 
-                if col_btn.button("Update", key=f"update_btn_{booking['booking_id']}"):
-                    success = booking_mgmt.update_booking_status(booking['booking_id'], new_status)
-                    if success:
-                        st.success(f"Booking {booking['booking_id']} updated to {new_status}.")
-                        st.rerun()
-                    else:
-                        st.error("Failed to update status.")
-                # col_drp_dwn, col_btn = st.columns([1,1])
-                # new_status = col_drp_dwn.selectbox(f"Update Status for {booking['booking_id']}", 
-                #                         [booking_action.PENDING, booking_action.APPROVE, booking_action.REJECT, booking_action.COMPLETED])
-                # if col_btn.button(f"Update Status {booking['booking_id']}"):
-                #     success = booking_mgmt.update_booking_status(booking['booking_id'], new_status)
-                #     if success:
-                #         st.success("Status updated.")
-                #     else:
-                #         st.error("Failed to update status.")
-            st.write("---")
+            if row[5].button("Update", key=f"update_btn_{booking['booking_id']}"):
+                success = booking_mgmt.update_booking_status(booking['booking_id'], new_status)
+                if success:
+                    st.success(f"Booking {booking['booking_id']} updated to {new_status}.")
+                    st.rerun()
+                else:
+                    st.error("Failed to update status.")
 
 # Main app logic
 def main():

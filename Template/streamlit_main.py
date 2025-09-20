@@ -159,6 +159,7 @@ def display_add_car_form():
     registration_number = st.text_input("Registration_number")
 
     if st.button("Add Car"):
+        car_creater = CarFactory.get_instance()
         car_id = car_mgmt.add_car(manufacturer, model, year, mileage, is_Available, min_rental_period, max_rental_period, car_rate,registration_number,car_type,fuel_type)
         if car_id:
             st.success(f"Car added successfully with ID {car_id}.")
@@ -247,8 +248,8 @@ def display_customer_dashboard():
         st.subheader("Available Cars")
 
         # Table header
-        header_cols = st.columns([1, 3, 2, 2, 2, 2])
-        headers = ["ID", "Model", "Year", "Mileage", "Rate ($/day)", "Action"]
+        header_cols = st.columns([2, 3, 2, 2, 2, 2])
+        headers = ["Registration #", "Manuefacture & Model", "Year", "Mileage", "Rate ($/day)", "Action"]
         for col, label in zip(header_cols, headers):
             col.markdown(f"**{label}**")
 
@@ -258,7 +259,7 @@ def display_customer_dashboard():
             car = Car(**car_data)
 
             if car.is_available:
-                row = st.columns([1, 3, 2, 2, 2, 2])
+                row = st.columns([2, 3, 2, 2, 2, 2])
                 row[0].write(car.get_registration_number())
                 row[1].write(f"{car._manufacturer} {car._model}")
                 row[2].write(car.year)
@@ -288,7 +289,7 @@ def display_customer_dashboard():
             booking = Booking(**booking_data)
             booking_rows.append({
                 "Booking ID": booking.registration_number,
-                "Car ID": booking.model,
+                "Car Model": booking.model,
                 "Status": booking._rental_status,
                 "Start Date": booking.start_date,
                 "End Date": booking.end_date,
@@ -422,7 +423,7 @@ def booking_ui(car_id: int):
             else:
                 st.error("Booking failed.")
 
-    if st.button("Back to Dashboard", key="back_dashboard_booking"):
+    if st.button("🔙", key="back_dashboard_booking"):
         st.session_state['show_book_car'] = False
         del st.session_state['book_car_id']
         st.rerun()
